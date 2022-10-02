@@ -1,0 +1,50 @@
+sudo docker pull eclipse-mosquitto
+
+//Napravite konfiguracioni fajl za mosquitto i dozvolite anonimne konekcije i port
+listener 1883
+allow_anonymous true
+
+//cd u folder gde je konfiguracioni fajl
+
+sudo docker run -it -p 1883:1883 -p 9001:9001 -v $PWD/mosquitto.conf:/mosquitto/config/mosquitto.con exlipse-mosquitto
+
+//Preporucio bih verziju 1.8
+
+sudo docker pull influxdb:1.8
+
+sudo docker run -d -p 8086:8086 
+     -v influxdb:/var/lib/influxdb --name influxdb influxdb
+
+docker exec -it influxdb influx
+
+create database sensors
+
+use senosrs
+
+create user "telegraf" with password "telegraf"
+
+grant all on sensors to telegraf
+
+sudo docker pull telegraf
+
+sudo docker run --rm telegraf telegraf config > telegraf.conf
+
+telegraf.conf
+
+	mqtt_consumer 
+
+servers = ["tcp://raspberry_pi_ip:1883"]
+topics = [
+  "sensors"
+]
+data_format = "influx"
+
+	outputs.influxdb		
+
+urls = ["http://raspberry_pi_ip:8086"]
+database = "sensors"
+skip_database_creation = true
+username = "telegraf"
+password = "telegraf"
+
+sudo docker run  -v /home/pi/:/etc/telegraf:ro telegraf
